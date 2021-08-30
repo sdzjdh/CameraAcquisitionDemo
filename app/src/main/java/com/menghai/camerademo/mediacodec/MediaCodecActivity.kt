@@ -9,6 +9,8 @@ import android.os.Build
 import android.os.Bundle
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import androidx.lifecycle.Lifecycle
+import com.menghai.camerademo.Audio.AudioRecordUtils
 import com.menghai.camerademo.R
 import java.io.IOException
 import java.util.concurrent.ArrayBlockingQueue
@@ -20,7 +22,7 @@ import java.util.concurrent.ArrayBlockingQueue
  * @email       zhenhai.zhao@asiainnovations.com
  * @description MediaCodec视频拍摄类
  **/
-class MediaCodecActivity: Activity(), SurfaceHolder.Callback, PreviewCallback {
+class MediaCodecActivity : Activity(), SurfaceHolder.Callback, PreviewCallback {
 
     private var surfaceview: SurfaceView? = null
 
@@ -43,17 +45,14 @@ class MediaCodecActivity: Activity(), SurfaceHolder.Callback, PreviewCallback {
 
     companion object {
         const val yuvqueuesize = 10
+
         //待解码视频缓冲队列，静态成员！ 有界阻塞队列
-         val YUVQueues = ArrayBlockingQueue<ByteArray>(yuvqueuesize)
+        val YUVQueues = ArrayBlockingQueue<ByteArray>(yuvqueuesize)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_media_codec)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE), 100)
-        }
 
         surfaceview = findViewById(R.id.surfaceview)
         surfaceHolder = surfaceview?.holder
@@ -72,6 +71,8 @@ class MediaCodecActivity: Activity(), SurfaceHolder.Callback, PreviewCallback {
         avcCodec?.init(width, height, framerate, biterate)
         //启动编码线程
         avcCodec?.startEncoderThread()
+
+        AudioRecordUtils.start(this)
     }
 
     /**
@@ -97,6 +98,8 @@ class MediaCodecActivity: Activity(), SurfaceHolder.Callback, PreviewCallback {
             camera = null
             avcCodec?.stopThread()
         }
+
+        AudioRecordUtils.stop()
     }
 
     override fun onPreviewFrame(data: ByteArray?, camera: Camera?) {
@@ -136,7 +139,7 @@ class MediaCodecActivity: Activity(), SurfaceHolder.Callback, PreviewCallback {
                 //调用startPreview()用以更新preview的surface，必须要在拍照之前start Preview
                 mCamera.startPreview()
 
-            } catch (e: IOException){
+            } catch (e: IOException) {
                 e.printStackTrace()
             }
         }
